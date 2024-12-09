@@ -8,7 +8,11 @@ dotenv.config();
 
 const app = express();
 //?Middle wair
-app.use(cors({ origin: '*' }))
+app.use(cors({
+    origin: '*', // Allows all origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specifies allowed HTTP methods
+    allowedHeaders: ['Content-Type', 'Authorization'], // Specifies allowed headers
+}));
 app.use(bodyParser.json());
 //? setting static folder path
 app.use('/image/products', express.static('public/products'));
