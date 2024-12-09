@@ -7,6 +7,7 @@ const { uploadCategory } = require('../uploadFile');
 const multer = require('multer');
 const asyncHandler = require('express-async-handler');
 const dotenv = require('dotenv');
+const uploadOnCloudinary=require('../utils/cloudinary')
 dotenv.config();
 
 // Get all categories
@@ -39,26 +40,41 @@ router.post('/', asyncHandler(async (req, res) => {
         uploadCategory.single('img')(req, res, async function (err) {
             if (err instanceof multer.MulterError) {
                 if (err.code === 'LIMIT_FILE_SIZE') {
-                    err.message = 'File size is too large. Maximum filesize is 5MB.';
+                    return res.status(400).json({ success: false, message: 'File size is too large. Maximum filesize is 5MB.' });
                 }
-                console.log(`Add category: ${err}`);
-                return res.json({ success: false, message: err });
+                console.error(`Add category: ${err}`);
+                return res.status(400).json({ success: false, message: err.message });
             } else if (err) {
-                console.log(`Add category: ${err}`);
-                return res.json({ success: false, message: err });
+                console.error(`Add category: ${err}`);
+                return res.status(400).json({ success: false, message: err.message });
             }
+
             const { name } = req.body;
-            let imageUrl = 'no_url';
-            if (req.file) {
-                imageUrl = `${process.env.BASE_URL_IMAGE}/category/${req.file.filename}`;
-            }
-            console.log('url ', req.file)
 
             if (!name) {
                 return res.status(400).json({ success: false, message: "Name is required." });
             }
 
+            let imageUrl = 'no_url'; // Default URL if no file is uploaded
+            if (req.file) {
+                try {
+                    console.log("File path received for upload:", req.file.path);
+                    // Upload the image to Cloudinary
+                    const uploadResponse = await uploadOnCloudinary(req.file.path);
+                    console.log("Upload response:", uploadResponse);
+                    if (uploadResponse) {
+                        imageUrl = uploadResponse; // Set the image URL
+                    }
+                } catch (uploadError) {
+                    console.error("Error uploading file to Cloudinary:", uploadError.message);
+                    return res.status(500).json({ success: false, message: "File upload failed." });
+                }
+            }
+
+            console.log("Image URL to be saved:", imageUrl);
+
             try {
+                // Create a new category
                 const newCategory = new Category({
                     name: name,
                     image: imageUrl
@@ -69,14 +85,13 @@ router.post('/', asyncHandler(async (req, res) => {
                 console.error("Error creating category:", error);
                 res.status(500).json({ success: false, message: error.message });
             }
-
         });
-
     } catch (err) {
-        console.log(`Error creating category: ${err.message}`);
+        console.error(`Error creating category: ${err.message}`);
         return res.status(500).json({ success: false, message: err.message });
     }
 }));
+
 
 // Update a category
 router.put('/:id', asyncHandler(async (req, res) => {
