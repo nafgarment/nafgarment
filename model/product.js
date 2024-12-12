@@ -53,7 +53,7 @@ const productSchema = new mongoose.Schema({
     proVariantId: [String],
     images: [{
         image: {
-            type: Number,
+            type: String,
             required: true
         },
         url: {
