@@ -1,14 +1,31 @@
-const express = require("express");
+const express = require('express')
 const router = express.Router();
 const Category = require("../model/category");
 const SubCategory = require("../model/subCategory");
 const Product = require("../model/product");
-const { uploadCategory } = require("../uploadFile");
-const multer = require("multer");
 const asyncHandler = require("express-async-handler");
 const dotenv = require("dotenv");
-const uploadOnCloudinary = require("../utils/cloudinary");
 dotenv.config();
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer')
+
+
+// const { uploadCategory } = require("../uploadFile");
+// const multer = require("multer");
+// const uploadOnCloudinary = require("../utils/cloudinary");
+
+
+// Cloudinary config
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Multer setup for file upload
+const storage = multer.memoryStorage(); // Store file in memory buffer
+const upload = multer({ storage });
+
 
 // Get all categories
 router.get(
@@ -51,23 +68,8 @@ router.get(
 );
 
 // Create a new category with image upload
-router.post("/",asyncHandler(async (req, res) => {
+router.post("/",upload.single("img"), asyncHandler(async (req, res) => {
     try {
-      uploadCategory.single("img")(req, res, async function (err) {
-        if (err instanceof multer.MulterError) {
-          if (err.code === "LIMIT_FILE_SIZE") {
-            return res.status(400).json({
-              success: false,
-              message: "File size is too large. Maximum filesize is 5MB.",
-            });
-          }
-          console.error(`Add category: ${err}`);
-          return res.status(400).json({ success: false, message: err.message });
-        } else if (err) {
-          console.error(`Add category: ${err}`);
-          return res.status(400).json({ success: false, message: err.message });
-        }
-
         const { name } = req.body;
 
         if (!name) {
@@ -77,30 +79,28 @@ router.post("/",asyncHandler(async (req, res) => {
         }
 
         let imageUrl = "no_url"; // Default URL if no file is uploaded
+
         if (req.file) {
-          try {
-            console.log("File path received for upload:", req.file.path);
-            // Upload the image to Cloudinary
-            const uploadResponse = await uploadOnCloudinary(req.file.path);
-            console.log("Upload response:", uploadResponse);
-            if (uploadResponse) {
-              imageUrl = uploadResponse; // Set the image URL
-            }else{
-                throw new Error("Error uploading the image ");
-                
-            }
-          } catch (uploadError) {
-            console.error(
-              "Error uploading file to Cloudinary:",
-              uploadError.message
-            );
-            return res
-              .status(500)
-              .json({ success: false, message: "File upload failed." });
-          }
+          const result = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream({ resource_type: "image" }, (error, result) => {
+              if (error) {
+                return reject(error);
+              }
+              resolve(result);
+            }).end(req.file.buffer);
+          });
+    
+          imageUrl = result.secure_url; // Store the Cloudinary image URL
+          console.log("Images Stored to cloudinary img url: ", imageUrl);
         }
 
         console.log("Image URL to be saved:", imageUrl);
+
+        console.log("Cloudinary Config:", {
+          cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+          api_key: process.env.CLOUDINARY_API_KEY,
+          api_secret: process.env.CLOUDINARY_API_SECRET,
+        });
 
         try {
           // Create a new category
@@ -118,7 +118,6 @@ router.post("/",asyncHandler(async (req, res) => {
           console.error("Error creating category:", error);
           res.status(500).json({ success: false, message: error.message });
         }
-      });
     } catch (err) {
       console.error(`Error creating category: ${err.message}`);
       return res.status(500).json({ success: false, message: err.message });
@@ -127,23 +126,9 @@ router.post("/",asyncHandler(async (req, res) => {
 );
 
 // Update a category
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id',upload.single("img"), asyncHandler(async (req, res) => {
     try {
-        uploadCategory.single('img')(req, res, async function (err) {
-            if (err instanceof multer.MulterError) {
-                if (err.code === 'LIMIT_FILE_SIZE') {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'File size is too large. Maximum filesize is 5MB.'
-                    });
-                }
-                console.error(`Update category: ${err}`);
-                return res.status(400).json({ success: false, message: err.message });
-            } else if (err) {
-                console.error(`Update category: ${err}`);
-                return res.status(400).json({ success: false, message: err.message });
-            }
-
+           
             const { name } = req.body;
 
             if (!name) {
@@ -152,20 +137,17 @@ router.put('/:id', asyncHandler(async (req, res) => {
 
             let imageUrl = req.body.image || 'no_url'; // Default URL if no file is uploaded
             if (req.file) {
-                try {
-                    console.log("File path received for upload:", req.file.path);
-                    // Upload the image to Cloudinary
-                    const uploadResponse = await uploadOnCloudinary(req.file.path);
-                    console.log("Upload response:", uploadResponse);
-                    if (uploadResponse) {
-                        imageUrl = uploadResponse; // Set the image URL
-                    } else {
-                        throw new Error("Error uploading the image");
-                    }
-                } catch (uploadError) {
-                    console.error("Error uploading file to Cloudinary:", uploadError.message);
-                    return res.status(500).json({ success: false, message: "File upload failed." });
-                }
+              const result = await new Promise((resolve, reject) => {
+                cloudinary.uploader.upload_stream({ resource_type: "image" }, (error, result) => {
+                  if (error) {
+                    return reject(error);
+                  }
+                  resolve(result);
+                }).end(req.file.buffer);
+              });
+        
+              imageUrl = result.secure_url; // Store the Cloudinary image URL
+              console.log("Images Stored to cloudinary img url: ", imageUrl);
             }
 
             console.log("Image URL to be updated:", imageUrl);
@@ -191,7 +173,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
                 console.error("Error updating category:", error);
                 res.status(500).json({ success: false, message: error.message });
             }
-        });
+        
     } catch (err) {
         console.error(`Error updating category: ${err.message}`);
         return res.status(500).json({ success: false, message: err.message });

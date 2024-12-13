@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon index.js"
@@ -16,12 +17,13 @@
     "cloudinary": "^2.5.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "express": "^4.21.2",
     "express-async-handler": "^1.2.0",
     "fs": "^0.0.1-security",
     "mongoose": "^8.3.2",
     "multer": "^1.4.5-lts.1",
     "onesignal-node": "^3.4.0",
+    "razorpay": "^2.9.5",
     "stripe": "^15.6.0"
   }
 }
