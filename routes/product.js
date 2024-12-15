@@ -4,7 +4,7 @@ const Product = require('../model/product');
 const { uploadProduct } = require('../uploadFile');
 const asyncHandler = require('express-async-handler');
 const cloudinary = require('cloudinary').v2;
-const multer = require('multer')
+const multer = require('multer');
 const dotenv = require("dotenv");
 dotenv.config();
 
