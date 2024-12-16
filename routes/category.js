@@ -7,7 +7,7 @@ const asyncHandler = require("express-async-handler");
 const dotenv = require("dotenv");
 dotenv.config();
 const cloudinary = require('cloudinary').v2;
-const multer = require('multer')
+const multer = require('multer');
 
 
 // const { uploadCategory } = require("../uploadFile");
