@@ -69,6 +69,13 @@ const orderSchema = new mongoose.Schema({
   trackingUrl: {
     type: String
   },
+  advancePayment:{
+    type:String
+  },
+  isFullPaid:{
+    type:String
+  }
+
 });
 
 const Order = mongoose.model('Order', orderSchema);
