@@ -70,10 +70,11 @@ const orderSchema = new mongoose.Schema({
     type: String
   },
   advancePayment:{
-    type:String
+    type:Number
   },
   isFullPaid:{
-    type:String
+    type: String,
+    enum: ['partially paid', 'full paid']
   }
 
 });
