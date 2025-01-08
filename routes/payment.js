@@ -48,14 +48,11 @@ router.post('/stripe', asyncHandler(async (req, res) => {
   }
 }));
 
-
-
-
-
 router.post('/razorpay', asyncHandler(async (req, res) => {
   try {
     console.log('razorpay')
     const razorpayKey  = process.env.RAZORPAY_KEY_TEST
+    console.log("API Key: ",razorpayKey)
     res.json({  key: razorpayKey });
   } catch (error) {
     console.log(error.message)
